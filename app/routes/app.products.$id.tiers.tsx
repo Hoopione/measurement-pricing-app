@@ -51,4 +51,62 @@ export async function action({ params, request }: ActionFunctionArgs) {
   const body = await resp.json();
 
   const errors = body?.data?.metafieldsSet?.userErrors ?? [];
-  return json({ ok: errors.length =
+  return json({ ok: errors.length === 0, errors });
+}
+
+export default function ProductTiersPage() {
+  const { product, config } = useLoaderData<typeof loader>();
+  const nav = useNavigation();
+  const busy = nav.state === "submitting";
+
+  const [jsonValue, setJsonValue] = React.useState(
+    JSON.stringify(
+      config ?? { unit: "cm", mode: "area", tiers: [], fallbackVariantId: null },
+      null,
+      2
+    )
+  );
+
+  const rows: VariantRow[] =
+    product?.variants?.edges?.map(({ node }: any) => [
+      node.title,
+      node.id,
+      `${node.price} €`,
+    ]) ?? [];
+
+  return (
+    <Page title={`Preisstaffeln: ${product?.title ?? ""}`}>
+      <Layout>
+        <Layout.Section>
+          <Card>
+            <Form method="post">
+              <TextField
+                label="Konfiguration (JSON)"
+                value={jsonValue}
+                onChange={setJsonValue}
+                multiline={16}
+                name="value"
+                autoComplete="off"
+              />
+              <InlineStack align="end">
+                <Button submit primary disabled={busy} loading={busy}>
+                  Speichern
+                </Button>
+              </InlineStack>
+            </Form>
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card title="Varianten (Zur Zuordnung der Preisstaffeln)">
+            <DataTable
+              columnContentTypes={["text", "text", "text"]}
+              headings={["Titel", "ID", "Preis"]}
+              rows={rows}
+            />
+          </Card>
+        </Layout.Section>
+      </Layout>
+    </Page>
+  );
+}

@@ -1,6 +1,6 @@
-client_id = "0d54229a7ee485c43dda3ae71a6aee3f"
+client_id = "fa840a0f86406301af001a7f15374dc5"
 name = "measurement-pricing-app"
-application_url = "https://measurement-pricing-production.up.railway.app"
+application_url = "https://measurement-pricing-app-production.up.railway.app"
 embedded = true
 
 [build]
@@ -22,7 +22,7 @@ uri = "/webhooks/app/scopes_update"
 scopes = "read_products,write_products,read_product_listings,write_product_listings,read_metaobject_definitions,write_metaobject_definitions,read_metaobjects,write_metaobjects"
 
 [auth]
-redirect_urls = [ "https://measurement-pricing-production.up.railway.app/auth/callback" ]
+redirect_urls = [ "https://measurement-pricing-app-production.up.railway.app/auth/callback" ]
 
 [[extensions]]
 name = "Measurement Pricing UI"

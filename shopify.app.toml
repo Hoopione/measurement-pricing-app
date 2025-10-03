@@ -1,0 +1,17 @@
+name = "Measurement Pricing"
+client_id = "SHOPIFY_API_KEY"
+application_url = "https://DEINE-RAILWAY-URL.up.railway.app"
+embedded = true
+
+[access_scopes]
+scopes = "read_products,write_products"
+
+[auth]
+redirect_urls = [ "https://DEINE-RAILWAY-URL.up.railway.app/auth/callback" ]
+
+[webhooks]
+api_version = "2025-01"
+
+[[extensions]]
+name = "Measurement Pricing UI"
+handle = "measurement-pricing-ui"

@@ -1,0 +1,37 @@
+{% comment %}
+App-Block für Produktseiten. Erwartet das Metafield custom.measurement_pricing (JSON).
+{% endcomment %}
+
+<div id="mp-root"
+     data-product-id="{{ product.id }}"
+     data-product-title="{{ product.title | escape }}"
+     data-selected-variant-id="{{ product.selected_or_first_available_variant.id }}"
+     data-money-format="{{ shop.money_format | escape }}"
+     data-metafield="{{ product.metafields.custom.measurement_pricing | json | escape }}">
+  <div class="mp">
+    <label for="mp-width">Breite (cm)</label>
+    <input id="mp-width" type="number" min="1" step="1" inputmode="numeric" />
+
+    <label for="mp-height">Höhe (cm)</label>
+    <input id="mp-height" type="number" min="1" step="1" inputmode="numeric" />
+
+    <div class="mp-price">Preis: <span id="mp-price">–</span></div>
+    <button id="mp-add" type="button">In den Warenkorb</button>
+    <div id="mp-error" style="display:none;color:red"></div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Measurement Pricing",
+  "target": "section",
+  "required": [
+    { "type": "product", "id": "product" }
+  ],
+  "settings": []
+}
+{% endschema %}
+
+{% javascript %}
+/* lädt extensions/assets/measurement.js automatisch */
+{% endjavascript %}

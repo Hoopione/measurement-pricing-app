@@ -1,3 +1,4 @@
+cat > extensions/measurement-pricing-ui/blocks/measurement-pricing.liquid << 'EOF'
 {% comment %}
 Measurement-UI: Breite/Höhe eingeben -> passende Tier wählen -> Variante setzen.
 Liest product.metafields.measurement.pricing (JSON).
@@ -19,4 +20,15 @@ Liest product.metafields.measurement.pricing (JSON).
   <div id="mp-hint" style="margin-top:8px;"></div>
 </div>
 
-<script src="{{ 'measurement-pricing.js' | asset_url }}" defer></script>
+{% schema %}
+{
+  "name": "Measurement Pricing",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "javascript": "measurement-pricing.js",
+  "settings": []
+}
+{% endschema %}
+EOF

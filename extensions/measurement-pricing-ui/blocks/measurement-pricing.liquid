@@ -1,0 +1,22 @@
+{% comment %}
+Measurement-UI: Breite/Höhe eingeben -> passende Tier wählen -> Variante setzen.
+Liest product.metafields.measurement.pricing (JSON).
+{% endcomment %}
+
+{% assign mp_json = product.metafields.measurement.pricing.value | default: '' %}
+
+<div id="mp-root"
+     data-product-id="{{ product.id }}"
+     data-pricing-json='{{ mp_json | escape }}'>
+  <div style="display:flex; gap:12px; align-items:center">
+    <label>Breite (cm):
+      <input type="number" id="mp-width" min="1" style="width:120px" />
+    </label>
+    <label>Höhe (cm):
+      <input type="number" id="mp-height" min="1" style="width:120px" />
+    </label>
+  </div>
+  <div id="mp-hint" style="margin-top:8px;"></div>
+</div>
+
+<script src="{{ 'measurement-pricing.js' | asset_url }}" defer></script>

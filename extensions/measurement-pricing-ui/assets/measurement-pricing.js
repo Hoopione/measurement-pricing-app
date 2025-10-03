@@ -1,3 +1,4 @@
+cat > extensions/measurement-pricing-ui/assets/measurement-pricing.js << 'EOF'
 (function(){
   function matchTier(pricing, w, h){
     if(!pricing || !Array.isArray(pricing.tiers)) return null;
@@ -23,12 +24,10 @@
   function switchVariant(variantGid){
     const form = document.querySelector('form[action*="/cart/add"]');
     if(!form) return;
-    // id Hidden auf die passende Variant-ID (numerisch) setzen:
     const varId = variantGid.split('/').pop();
     const inputId = form.querySelector('input[name="id"]');
     if(inputId){ inputId.value = varId; }
 
-    // Properties anhängen -> später im Warenkorb sichtbar
     const w = document.getElementById('mp-width')?.value;
     const h = document.getElementById('mp-height')?.value;
     ensurePropertyInput(form, 'properties[Width(cm)]', w || '');
@@ -67,3 +66,4 @@
     height?.addEventListener('input', recalc);
   });
 })();
+EOF

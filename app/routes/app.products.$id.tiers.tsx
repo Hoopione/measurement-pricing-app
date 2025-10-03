@@ -12,7 +12,7 @@ import {
   DataTable,
 } from "@shopify/polaris";
 
-import { GET_PRODUCT_TIER_METAFIELD, UPSERT_PRODUCT_TIER_METAFIELD } from "~/app/lib/graphql";
+import { GET_PRODUCT_TIER_METAFIELD, UPSERT_PRODUCT_TIER_METAFIELD } from "~/lib/graphql";
 import { authenticate } from "~/shopify.server"; // kommt aus dem Shopify-CLI-Template
 
 type VariantRow = [string, string, string];

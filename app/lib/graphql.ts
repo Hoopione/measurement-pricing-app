@@ -1,9 +1,12 @@
-export const GET_PRODUCT_TIER_METAFIELD = `#graphql
-  query($id: ID!) {
+import { gql } from "graphql-request";
+
+// Lädt Produkt + das eine Metafield (namespace=measurement, key=pricing)
+export const GET_PRODUCT_TIER_METAFIELD = gql`
+  query ProductWithMeta($id: ID!) {
     product(id: $id) {
       id
       title
-      variants(first: 100) {
+      variants(first: 50) {
         edges {
           node {
             id
@@ -12,24 +15,24 @@ export const GET_PRODUCT_TIER_METAFIELD = `#graphql
           }
         }
       }
-      metafield(namespace: "custom", key: "measurement_pricing") {
+      metafield(namespace: "measurement", key: "pricing") {
         id
         value
-        type
       }
     }
   }
 `;
 
-export const UPSERT_PRODUCT_TIER_METAFIELD = `#graphql
-  mutation Upsert($productId: ID!, $value: String!) {
+// Speichert das Metafield am Produkt (als JSON-String)
+export const UPSERT_PRODUCT_TIER_METAFIELD = gql`
+  mutation UpsertProductMeta($productId: ID!, $value: String!) {
     metafieldsSet(
       metafields: [
         {
-          namespace: "custom",
-          key: "measurement_pricing",
-          ownerId: $productId,
-          type: "json",
+          ownerId: $productId
+          namespace: "measurement"
+          key: "pricing"
+          type: "json"
           value: $value
         }
       ]

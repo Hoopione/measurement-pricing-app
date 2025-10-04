@@ -5,37 +5,47 @@ import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 
-import { authenticate } from "../shopify.server";
+import { authenticate } from "~/shopify.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
-
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  return {
+    apikey: process.env.SHOPIFY_API_KEY || "",
+  };
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+  const { apikey } = useLoaderData<typeof loader>();
 
   return (
-    <AppProvider isEmbeddedApp apiKey={apiKey}>
-      <NavMenu>
-        <Link to="/app" rel="home">
-          Home
-        </Link>
-        <Link to="/app/additional">Additional page</Link>
-      </NavMenu>
+    <AppProvider isEmbeddedApp apiKey={apikey}>
+      <nav style={{ padding: "1rem", background: "#f6f6f7", marginBottom: "1rem" }}>
+        <ul style={{ listStyle: "none", display: "flex", gap: "2rem", margin: 0 }}>
+          <li>
+            <Link to="/app" rel="home">🏠 Home</Link>
+          </li>
+          <li>
+            <Link to="/app/additional">📄 Additional Page</Link>
+          </li>
+          <li>
+            <Link to="/app/products/1018299296979/measurement">📏 Measurement Testseite</Link>
+          </li>
+        </ul>
+      </nav>
+
       <Outlet />
     </AppProvider>
   );
 }
 
-// Shopify needs Remix to catch some thrown responses, so that their headers are included in the response.
+// Fehlerbehandlung
 export function ErrorBoundary() {
   return boundary.error(useRouteError());
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
+// Header-Funktion
+export const headers: HeadersFunction = ({ headers }) => {
+  return headers;
 };

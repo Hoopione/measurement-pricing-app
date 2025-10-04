@@ -1,37 +1,32 @@
 {% comment %}
-App-Block für Produktseiten. Erwartet das Metafield custom.measurement_pricing (JSON).
+Measurement-UI: Breite/Höhe eingeben -> passende Tier wählen -> Variante setzen.
+Liest product.metafields.measurement.pricing (JSON).
 {% endcomment %}
+
+{% assign mp_json = product.metafields.measurement.pricing.value | default: '' %}
 
 <div id="mp-root"
      data-product-id="{{ product.id }}"
-     data-product-title="{{ product.title | escape }}"
-     data-selected-variant-id="{{ product.selected_or_first_available_variant.id }}"
-     data-money-format="{{ shop.money_format | escape }}"
-     data-metafield="{{ product.metafields.custom.measurement_pricing | json | escape }}">
-  <div class="mp">
-    <label for="mp-width">Breite (cm)</label>
-    <input id="mp-width" type="number" min="1" step="1" inputmode="numeric" />
-
-    <label for="mp-height">Höhe (cm)</label>
-    <input id="mp-height" type="number" min="1" step="1" inputmode="numeric" />
-
-    <div class="mp-price">Preis: <span id="mp-price">–</span></div>
-    <button id="mp-add" type="button">In den Warenkorb</button>
-    <div id="mp-error" style="display:none;color:red"></div>
+     data-pricing-json='{{ mp_json | escape }}'>
+  <div style="display:flex; gap:12px; align-items:center">
+    <label>Breite (cm):
+      <input type="number" id="mp-width" min="1" style="width:120px" />
+    </label>
+    <label>Höhe (cm):
+      <input type="number" id="mp-height" min="1" style="width:120px" />
+    </label>
   </div>
+  <div id="mp-hint" style="margin-top:8px;"></div>
 </div>
 
 {% schema %}
 {
   "name": "Measurement Pricing",
   "target": "section",
-  "required": [
-    { "type": "product", "id": "product" }
-  ],
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "javascript": "measurement-pricing.js",
   "settings": []
 }
 {% endschema %}
-
-{% javascript %}
-/* lädt extensions/assets/measurement.js automatisch */
-{% endjavascript %}

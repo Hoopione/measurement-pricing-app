@@ -3,7 +3,7 @@ import { json, redirect } from "@remix-run/node";
 import { useLoaderData, Form } from "@remix-run/react";
 import { Page, Layout, Card, TextField, Button, Banner } from "@shopify/polaris";
 import { gql } from "graphql-request";
-import { shopifyAdmin, authenticate } from "~/shopify.server";
+import { shopifyAdmin, authenticate } from "../shopify.server";
 
 // 1) Produkt + bestehendes Metafield laden
 const PRODUCT_QUERY = gql`

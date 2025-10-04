@@ -1,106 +1,156 @@
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
-import { useLoaderData, Form } from "@remix-run/react";
-import { Page, Layout, Card, TextField, Button, Banner } from "@shopify/polaris";
-import { gql } from "graphql-request";
-import { shopifyAdmin, authenticate } from "../shopify.server";
+import * as React from "react";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData, Form, useNavigation } from "@remix-run/react";
+import {
+  Page,
+  Layout,
+  Card,
+  TextField,
+  InlineStack,
+  Button,
+  DataTable,
+  Banner,
+} from "@shopify/polaris";
 
-// 1) Produkt + bestehendes Metafield laden
-const PRODUCT_QUERY = gql`
-  query ProductWithMeta($id: ID!) {
-    product(id: $id) {
-      id
-      title
-      variants(first: 50) { nodes { id, title, price } }
-      metafield(namespace:"measurement", key:"pricing") { id, value }
-    }
-  }
-`;
+import {
+  GET_PRODUCT_TIER_METAFIELD,
+  UPSERT_PRODUCT_TIER_METAFIELD,
+} from "../lib/graphql";
+import { authenticate } from "../shopify.server";
 
-// 2) Metafield speichern
-const UPSERT_METAFIELD = gql`
-  mutation UpsertProductMeta($ownerId: ID!, $value: String!) {
-    metafieldsSet(metafields: [{
-      ownerId: $ownerId,
-      namespace: "measurement",
-      key: "pricing",
-      type: "json",
-      value: $value
-    }]) {
-      userErrors { field, message }
-    }
-  }
-`;
+type VariantRow = [string, string, string];
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
-  const client = shopifyAdmin({ session });
-
-  const id = `gid://shopify/Product/${params.id}`;
-  const data = await client.request(PRODUCT_QUERY, { id });
-  return json({ product: data.product });
+// Hilfsfunktion: numerische ID -> GID
+function toProductGid(idOrGid: string) {
+  if (idOrGid.startsWith("gid://")) return idOrGid;
+  return `gid://shopify/Product/${idOrGid}`;
 }
 
-export async function action({ request, params }: ActionFunctionArgs) {
-  const { session } = await authenticate.admin(request);
-  const client = shopifyAdmin({ session });
+export async function loader({ params, request }: LoaderFunctionArgs) {
+  const { admin } = await authenticate.admin(request);
+  const raw = decodeURIComponent(params.id!);
+  const id = toProductGid(raw);
 
-  const form = await request.formData();
-  const payload = form.get("pricing") as string;
-  const ownerId = `gid://shopify/Product/${params.id}`;
+  try {
+    const resp = await admin.graphql(GET_PRODUCT_TIER_METAFIELD, {
+      variables: { id },
+    });
+    const body = await resp.json();
 
-  await client.request(UPSERT_METAFIELD, { ownerId, value: payload || "{}" });
-  return redirect(request.url);
+    const product = body?.data?.product;
+    const mfRaw = product?.metafield?.value;
+    let config: unknown = null;
+    try {
+      config = mfRaw ? JSON.parse(mfRaw) : null;
+    } catch {
+      config = null;
+    }
+
+    return json({
+      product,
+      config,
+      error: null as string | null,
+    });
+  } catch (e: any) {
+    // Fehler an die UI liefern statt 500
+    return json(
+      {
+        product: null,
+        config: null,
+        error:
+          e?.message ??
+          "Fehler beim Laden der Produktdaten. Prüfe API-Scopes und Logs.",
+      },
+      { status: 200 }
+    );
+  }
 }
 
-export default function ProductMeasurement() {
-  const { product } = useLoaderData<typeof loader>();
-  const initial = product.metafield?.value || JSON.stringify({
-    unit: "cm",
-    mode: "rect",
-    tiers: [
-      // Beispiel-Stufen:
-      // { id: "S", label: "bis 80 x 80", rules: { width: {max:80}, height:{max:80} }, variantId:"VARIANT_GID" }
-    ]
-  }, null, 2);
+export async function action({ params, request }: ActionFunctionArgs) {
+  const { admin } = await authenticate.admin(request);
+  const raw = decodeURIComponent(params.id!);
+  const productId = toProductGid(raw);
+
+  try {
+    const form = await request.formData();
+    const value = (form.get("value") as string) ?? "{}";
+
+    const resp = await admin.graphql(UPSERT_PRODUCT_TIER_METAFIELD, {
+      variables: { productId, value },
+    });
+    const body = await resp.json();
+
+    const errors: Array<{ field?: string[]; message: string }> =
+      body?.data?.metafieldsSet?.userErrors ?? [];
+
+    return json({ ok: errors.length === 0, errors });
+  } catch (e: any) {
+    return json({
+      ok: false,
+      errors: [{ message: e?.message ?? "Unbekannter Fehler beim Speichern." }],
+    });
+  }
+}
+
+export default function ProductTiersPage() {
+  const { product, config, error } = useLoaderData<typeof loader>();
+  const nav = useNavigation();
+  const busy = nav.state === "submitting";
+
+  const [jsonValue, setJsonValue] = React.useState(
+    JSON.stringify(
+      config ?? { unit: "cm", mode: "area", tiers: [], fallbackVariantId: null },
+      null,
+      2
+    )
+  );
+
+  const rows: VariantRow[] =
+    product?.variants?.edges?.map(({ node }: any) => [
+      node.title,
+      node.id,
+      `${node.price} €`,
+    ]) ?? [];
 
   return (
-    <Page title={`Measurement – ${product.title}`}>
+    <Page title={`Preisstaffeln: ${product?.title ?? ""}`}>
       <Layout>
+        {error ? (
+          <Layout.Section>
+            <Banner tone="critical" title="Fehler">
+              {error}
+            </Banner>
+          </Layout.Section>
+        ) : null}
+
         <Layout.Section>
           <Card>
-            <p>Varianten (ID für Zuweisung):</p>
-            <ul style={{marginBottom: 10}}>
-              {product.variants.nodes.map((v:any)=>(
-                <li key={v.id}>{v.title} — {v.price} — <code>{v.id}</code></li>
-              ))}
-            </ul>
             <Form method="post">
               <TextField
-                label="Pricing JSON"
-                name="pricing"
+                label="Konfiguration (JSON)"
+                value={jsonValue}
+                onChange={setJsonValue}
                 multiline={16}
-                defaultValue={initial}
+                name="value"
                 autoComplete="off"
               />
-              <div style={{marginTop:12}}>
-                <Button submit primary>Speichern</Button>
-              </div>
+              <InlineStack align="end">
+                <Button submit primary disabled={busy} loading={busy}>
+                  Speichern
+                </Button>
+              </InlineStack>
             </Form>
-            <Banner tone="info" title="Schema">
-              <pre style={{whiteSpace:"pre-wrap"}}>
-{`{
-  "unit": "cm",
-  "mode": "rect",
-  "tiers": [
-    { "id": "S", "label":"bis 80x80",
-      "rules": { "width": {"max":80}, "height":{"max":80} },
-      "variantId":"gid://shopify/ProductVariant/1234567890"
-    }
-  ]
-}`}
-              </pre>
-            </Banner>
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card title="Varianten (Zur Zuordnung der Preisstaffeln)">
+            <DataTable
+              columnContentTypes={["text", "text", "text"]}
+              headings={["Titel", "ID", "Preis"]}
+              rows={rows}
+            />
           </Card>
         </Layout.Section>
       </Layout>
